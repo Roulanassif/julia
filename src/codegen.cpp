@@ -2145,24 +2145,16 @@ static jl_value_t *static_eval(jl_value_t *ex, jl_codectx_t *ctx, int sparams=tr
                     if (!allow_alloc)
                         return NULL;
                     jl_value_t **v;
-                    JL_GC_PUSHARGS(v, n);
+                    JL_GC_PUSHARGS(v, n+1);
+                    v[0] = f;
                     for (i = 0; i < n; i++) {
-                        v[i] = static_eval(jl_exprarg(e, i+1), ctx, sparams, allow_alloc);
-                        if (v[i] == NULL) {
+                        v[i+1] = static_eval(jl_exprarg(e, i+1), ctx, sparams, allow_alloc);
+                        if (v[i+1] == NULL) {
                             JL_GC_POP();
                             return NULL;
                         }
                     }
-                    jl_value_t *result;
-                    JL_TRY {
-                        if (f == jl_builtin_tuple)
-                            result = jl_f_tuple(NULL, v, n);
-                        else
-                            result = jl_f_apply_type(NULL, v, n);
-                    }
-                    JL_CATCH {
-                        result = NULL;
-                    }
+                    jl_value_t *result = jl_apply_with_saved_exception_state(v, n+1, 1);
                     JL_GC_POP();
                     return result;
                 }
