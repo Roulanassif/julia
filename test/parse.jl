@@ -1084,3 +1084,13 @@ let prim = parse("primitive type X 8 end")
     @test parse("primitive type X 8\nend") == prim
     @test parse(string("primitive type X 8", "\n"^5, "end")) == prim
 end
+
+# issue #21155
+@test filter(x->!(isa(x,Expr) && x.head === :line),
+             parse("module B
+                        using ..x,
+                              ..y
+                    end").args[3].args)[1] ==
+      Expr(:toplevel,
+           Expr(:using, Symbol("."), Symbol("."), :x),
+           Expr(:using, Symbol("."), Symbol("."), :y))
